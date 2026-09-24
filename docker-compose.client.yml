@@ -27,7 +27,7 @@ services:
           -e "/^\[shadowsocks-client\]/a inbound.length = $${I2P_INBOUND_LENGTH}" \
           -e "/^\[shadowsocks-client\]/a outbound.length = $${I2P_OUTBOUND_LENGTH}" \
           /home/i2pd/data/tunnels.conf.src > /home/i2pd/data/tunnels.conf
-        exec i2pd --datadir=/home/i2pd/data --http.auth --http.pass="$${I2PD_CONSOLE_PASS}"
+        exec i2pd --datadir=/home/i2pd/data --http.auth=on --http.pass="$${I2PD_CONSOLE_PASS}"
     volumes:
       - i2pd-client-data:/home/i2pd/data
       - ./client/i2pd.conf:/home/i2pd/data/i2pd.conf:ro

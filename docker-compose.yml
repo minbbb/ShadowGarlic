@@ -22,7 +22,7 @@ services:
         sed -e "s|__I2P_INBOUND_LENGTH__|$${I2P_INBOUND_LENGTH}|g" \
             -e "s|__I2P_OUTBOUND_LENGTH__|$${I2P_OUTBOUND_LENGTH}|g" \
             /home/i2pd/tunnels.conf.template > /home/i2pd/data/tunnels.conf
-        exec i2pd --datadir=/home/i2pd/data --http.auth --http.pass="$${I2PD_CONSOLE_PASS}"
+        exec i2pd --datadir=/home/i2pd/data --http.auth=on --http.pass="$${I2PD_CONSOLE_PASS}"
     volumes:
       # i2pd data (netdb, keys). Named volume is initialized from the
       # image (owner i2pd, uid 100) - do not bind-mount a host folder here,
