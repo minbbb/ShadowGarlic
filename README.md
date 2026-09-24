@@ -100,8 +100,8 @@ The length of the I2P tunnels is set by two `.env` variables:
 
 | Variable              | Range | Default | What it sets         |
 | --------------------- | ----- | ------- | -------------------- |
-| `I2P_INBOUND_LENGTH`  | 1–8   | `3`     | Inbound tunnel hops  |
-| `I2P_OUTBOUND_LENGTH` | 1–8   | `3`     | Outbound tunnel hops |
+| `I2P_INBOUND_LENGTH`  | 0–8   | `3`     | Inbound tunnel hops  |
+| `I2P_OUTBOUND_LENGTH` | 0–8   | `3`     | Outbound tunnel hops |
 
 - Fewer hops → lower latency and higher speed, but weaker anonymity.
 - How it is configured technically: the values from `.env` are passed into the
