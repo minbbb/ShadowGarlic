@@ -166,6 +166,15 @@ Run:
 docker compose -f docker-compose.client.yml up -d
 ```
 
+### Using from a phone
+
+Alternatively, the proxy can be used from a phone: set up the tunnel in an I2P
+app using the server's b32 address and connect to it with any
+Shadowsocks-capable client using `SS_PASSWORD`/`SS_METHOD` from `.env`. In the
+I2P app point the tunnel to the server's `destinationport` (`8388` by default)
+and specify a local port (e.g. `7655`) - the Shadowsocks client then connects to
+`127.0.0.1:7655`.
+
 ## 3. Verifying it works
 
 On the client:
