@@ -48,17 +48,17 @@ Edit `.env`:
 | Variable              | Default                    | Purpose                                                                                              |
 | --------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `SS_METHOD`           | `aes-256-gcm`              | Shadowsocks cipher                                                                                   |
-| `SS_PASSWORD`         | `ChangeMe_strong_password` | Shadowsocks password — **you must change it**                                                        |
+| `SS_PASSWORD`         | `ChangeMe_strong_password` | Shadowsocks password - **you must change it**                                                        |
 | `SS_SERVER_PORT`      | `8388`                     | ssserver port inside the compose network. Must match `port = 8388` in `config/tunnels.conf.template` |
 | `SS_LOCAL_PORT`       | `1080`                     | SOCKS5 port on the client (host)                                                                     |
-| `I2PD_CONSOLE_PASS`   | `ChangeMe_strong_password` | i2pd webconsole password (Basic Auth) — **you must change it**                                       |
-| `I2P_INBOUND_LENGTH`  | `3`                        | Inbound I2P tunnel hops (1–8) — see section below                                                    |
-| `I2P_OUTBOUND_LENGTH` | `3`                        | Outbound I2P tunnel hops (1–8) — see section below                                                   |
+| `I2PD_CONSOLE_PASS`   | `ChangeMe_strong_password` | i2pd webconsole password (Basic Auth) - **you must change it**                                       |
+| `I2P_INBOUND_LENGTH`  | `3`                        | Inbound I2P tunnel hops (0-8) - see section below                                                    |
+| `I2P_OUTBOUND_LENGTH` | `3`                        | Outbound I2P tunnel hops (0-8) - see section below                                                   |
 | `I2PD_IMAGE_TAG`      | `release-2.61.0`           | i2pd image tag                                                                                       |
 | `SS_IMAGE_TAG`        | `v1.25.0`                  | shadowsocks-rust image tag                                                                           |
 
 > IMPORTANT about passwords (`SS_PASSWORD` and `I2PD_CONSOLE_PASS`): avoid the
-> characters `$`, `"`, `\` — they break compose interpolation (the values end up
+> characters `$`, `"`, `\` - they break compose interpolation (the values end up
 > in the CLI args `-k ...` and `--http.pass="..."`).
 
 Run:
@@ -86,7 +86,7 @@ docker compose logs i2pd | grep "Local address"
 
 Alternatively, open the webconsole by forwarding the port over SSH
 (`ssh -p 22 -L 7070:127.0.0.1:7070 root@<server_IP>` → on your PC open
-`http://localhost:7070`, login `i2pd`, password — the `I2PD_CONSOLE_PASS`
+`http://localhost:7070`, login `i2pd`, password - the `I2PD_CONSOLE_PASS`
 value from `.env`) → the **I2P tunnels** page → the **Server tunnels** section:
 `<b32>.b32.i2p` is there too.
 
@@ -100,16 +100,16 @@ The length of the I2P tunnels is set by two `.env` variables:
 
 | Variable              | Range | Default | What it sets         |
 | --------------------- | ----- | ------- | -------------------- |
-| `I2P_INBOUND_LENGTH`  | 0–8   | `3`     | Inbound tunnel hops  |
-| `I2P_OUTBOUND_LENGTH` | 0–8   | `3`     | Outbound tunnel hops |
+| `I2P_INBOUND_LENGTH`  | 0-8   | `3`     | Inbound tunnel hops  |
+| `I2P_OUTBOUND_LENGTH` | 0-8   | `3`     | Outbound tunnel hops |
 
 - Fewer hops → lower latency and higher speed, but weaker anonymity.
 - How it is configured technically: the values from `.env` are passed into the
   container via `environment:`, and the i2pd container entrypoint substitutes
   them into `inbound.length`/`outbound.length`:
-    - server — by rendering the `config/tunnels.conf.template` template into
+    - server - by rendering the `config/tunnels.conf.template` template into
       `/home/i2pd/data/tunnels.conf`;
-    - client — by injecting them into your `client/tunnels.conf` (the file with
+    - client - by injecting them into your `client/tunnels.conf` (the file with
       the b32 address).
 - To apply after editing `.env`: `docker compose up -d` (changing the value
   recreates the i2pd container, which rebuilds its tunnels with the new length).
@@ -129,7 +129,7 @@ docker compose down -v                   # stops the containers and removes the 
 docker volume rm shadowgarlic_i2pd-data  # just removes the volume
 ```
 
-> ⚠️ After the reset the address changes — update `destination` in
+> ⚠️ After the reset the address changes - update `destination` in
 > `client/tunnels.conf` on the client (see step 2), otherwise the client tunnel
 > will not connect to the server. The client volume is reset the same way:
 > `docker compose -f docker-compose.client.yml down -v`.
@@ -176,7 +176,7 @@ curl -x socks5h://127.0.0.1:1080 https://api.ipify.org
 
 Returns the **server's public IP**.
 
-> Note the `socks5h` (the domain is resolved through the proxy — server-side).
+> Note the `socks5h` (the domain is resolved through the proxy - server-side).
 > With `socks5` (no `h`) the domain is resolved locally by the client's system
 > resolver and will not go through the tunnel.
 
@@ -192,7 +192,7 @@ docker compose -f docker-compose.client.yml logs -f i2pd   # client i2pd logs
 
 ## Limitations and notes
 
-- **The client SOCKS5 (port `SS_LOCAL_PORT`) is published on `0.0.0.0`** — the
+- **The client SOCKS5 (port `SS_LOCAL_PORT`) is published on `0.0.0.0`** - the
   proxy without authentication is available to all devices on the host's local
   network. If access is needed only from the machine itself, change it to
   `127.0.0.1:${SS_LOCAL_PORT}:${SS_LOCAL_PORT}` in `docker-compose.client.yml`.
