@@ -1,0 +1,62 @@
+# Server side: i2pd with a server tunnel that forwards
+# I2P streams to the shadowsocks container. ssserver reaches the public internet.
+
+services:
+  i2pd:
+    image: purplei2p/i2pd:${I2PD_IMAGE_TAG:-release-2.61.0}
+    container_name: shadowgarlic-i2pd-server
+    restart: unless-stopped
+    environment:
+      # Passed to the entrypoint (see below), which renders
+      # config/tunnels.conf.template into the datadir. Values 1-8 from .env.
+      I2P_INBOUND_LENGTH: ${I2P_INBOUND_LENGTH:-3}
+      I2P_OUTBOUND_LENGTH: ${I2P_OUTBOUND_LENGTH:-3}
+      # Webconsole password (Basic Auth). i2pd.conf is not templated,
+      # so auth is enabled via the CLI args in the entrypoint below.
+      I2PD_CONSOLE_PASS: ${I2PD_CONSOLE_PASS}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        ln -s /i2pd_certificates "$$DATA_DIR"/certificates 2>/dev/null || true
+        sed -e "s|__I2P_INBOUND_LENGTH__|$${I2P_INBOUND_LENGTH}|g" \
+            -e "s|__I2P_OUTBOUND_LENGTH__|$${I2P_OUTBOUND_LENGTH}|g" \
+            /home/i2pd/tunnels.conf.template > /home/i2pd/data/tunnels.conf
+        exec i2pd --datadir=/home/i2pd/data --http.auth --http.pass="$${I2PD_CONSOLE_PASS}"
+    volumes:
+      # i2pd data (netdb, keys). Named volume is initialized from the
+      # image (owner i2pd, uid 100) - do not bind-mount a host folder here,
+      # otherwise you get permission issues on Windows.
+      - i2pd-data:/home/i2pd/data
+      # i2pd.conf is mounted read-only over the volume (i2pd reads configs
+      # from the datadir). tunnels.conf is NOT mounted as a static file: on
+      # start the entrypoint renders it into the datadir from the template.
+      - ./config/i2pd.conf:/home/i2pd/data/i2pd.conf:ro
+      - ./config/tunnels.conf.template:/home/i2pd/tunnels.conf.template:ro
+    ports:
+      # Webconsole (to view the tunnel's b32 address). Access only from
+      # the host loopback - open http://localhost:7070
+      # (Host: localhost passes i2pd's strictheaders check).
+      - "127.0.0.1:7070:7070"
+    networks:
+      - i2pnet
+
+  shadowsocks:
+    image: ghcr.io/shadowsocks/ssserver-rust:${SS_IMAGE_TAG:-v1.25.0}
+    container_name: shadowgarlic-shadowsocks-server
+    restart: unless-stopped
+    # The official entrypoint does not read config from env vars,
+    # so parameters are passed as CLI args (interpolated from .env).
+    # ssserver listens inside the compose network and is reachable by i2pd as "shadowsocks:8388".
+    command: >
+      ssserver --log-without-time -a nobody
+      -s 0.0.0.0:${SS_SERVER_PORT:-8388}
+      -k ${SS_PASSWORD} -m ${SS_METHOD:-aes-256-gcm}
+    networks:
+      - i2pnet
+
+networks:
+  i2pnet: {}
+
+volumes:
+  i2pd-data: {}

@@ -1,0 +1,71 @@
+# Client side: local i2pd with a client tunnel to the server b32
+# and sslocal, which connects to that tunnel and exposes SOCKS5 to the host.
+
+services:
+  i2pd:
+    image: purplei2p/i2pd:${I2PD_IMAGE_TAG:-release-2.61.0}
+    container_name: shadowgarlic-i2pd-client
+    restart: unless-stopped
+    environment:
+      # Passed to the entrypoint (see below), which injects them into
+      # client/tunnels.conf as inbound.length/outbound.length.
+      I2P_INBOUND_LENGTH: ${I2P_INBOUND_LENGTH:-3}
+      I2P_OUTBOUND_LENGTH: ${I2P_OUTBOUND_LENGTH:-3}
+      # Webconsole password (Basic Auth). i2pd.conf is not templated,
+      # so auth is enabled via the CLI args in the entrypoint below.
+      I2PD_CONSOLE_PASS: ${I2PD_CONSOLE_PASS}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        ln -s /i2pd_certificates "$$DATA_DIR"/certificates 2>/dev/null || true
+        if [ ! -f /home/i2pd/data/tunnels.conf.src ]; then
+          echo "client/tunnels.conf not found: copy client/tunnels.conf.example to client/tunnels.conf and paste the b32 address" >&2
+          exit 1
+        fi
+        sed \
+          -e "/^\[shadowsocks-client\]/a inbound.length = $${I2P_INBOUND_LENGTH}" \
+          -e "/^\[shadowsocks-client\]/a outbound.length = $${I2P_OUTBOUND_LENGTH}" \
+          /home/i2pd/data/tunnels.conf.src > /home/i2pd/data/tunnels.conf
+        exec i2pd --datadir=/home/i2pd/data --http.auth --http.pass="$${I2PD_CONSOLE_PASS}"
+    volumes:
+      - i2pd-client-data:/home/i2pd/data
+      - ./client/i2pd.conf:/home/i2pd/data/i2pd.conf:ro
+      # User file with the b32 address. Mounted under a DIFFERENT name
+      # so i2pd does not read it directly: the entrypoint injects
+      # inbound.length/outbound.length from .env and writes the finished file to the datadir.
+      - ./client/tunnels.conf:/home/i2pd/data/tunnels.conf.src:ro
+    networks:
+      - i2pnet
+
+  shadowsocks:
+    image: ghcr.io/shadowsocks/sslocal-rust:${SS_IMAGE_TAG:-v1.25.0}
+    container_name: shadowgarlic-shadowsocks-local
+    restart: unless-stopped
+    # sslocal connects to the client tunnel of i2pd (TCP port 7655,
+    # the "server" from its point of view) and exposes a local SOCKS5 proxy.
+    command: >
+      sslocal --log-without-time -a nobody
+      -b 0.0.0.0:${SS_LOCAL_PORT:-1080}
+      -s i2pd:7655
+      -k ${SS_PASSWORD} -m ${SS_METHOD:-aes-256-gcm}
+    ports:
+      # SOCKS5 for applications on the host.
+      #
+      # SECURITY: publishing on 0.0.0.0 (no IP prefix) makes the proxy
+      # reachable by the whole local network - it has no authentication. This
+      # is a conscious choice (LAN access from other devices). If you only
+      # need it on this machine: replace with "127.0.0.1:${SS_LOCAL_PORT}:${SS_LOCAL_PORT}".
+      # Restrict access at the firewall/router level; docker port publishing
+      # bypasses ufw/iptables on Linux.
+      - "${SS_LOCAL_PORT:-1080}:${SS_LOCAL_PORT:-1080}"
+    networks:
+      - i2pnet
+    depends_on:
+      - i2pd
+
+networks:
+  i2pnet: {}
+
+volumes:
+  i2pd-client-data: {}

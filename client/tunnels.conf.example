@@ -1,0 +1,21 @@
+# Client tunnel: listens on a TCP port inside the compose network
+# and forwards traffic to the server tunnel over I2P.
+#
+# 1. Get the b32 address of the server tunnel (run on the server):
+#      docker compose logs i2pd | grep "Local address"
+#    or open the webconsole http://<server>:7070 -> I2P tunnels page.
+# 2. Copy this file to client/tunnels.conf:
+#      copy client\tunnels.conf.example client\tunnels.conf   (Windows)
+#      cp client/tunnels.conf.example client/tunnels.conf      (Linux/WSL)
+# 3. Paste the obtained address into destination.
+# 4. Run docker compose -f docker-compose.client.yml up -d
+#
+# destinationport MUST match the server tunnel port
+# (port = 8388 in config/tunnels.conf).
+
+[shadowsocks-client]
+type = client
+address = 0.0.0.0
+port = 7655
+destination = <PASTE_B32_ADDRESS_HERE>.b32.i2p
+destinationport = 8388

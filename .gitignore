@@ -1,0 +1,8 @@
+# Secrets and local values
+.env
+
+# Client tunnels.conf: filled in manually (server b32 address)
+client/tunnels.conf
+
+# Local i2pd data (if you restore the volume from compose)
+i2pd-data/

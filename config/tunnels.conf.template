@@ -1,0 +1,21 @@
+# Server tunnel: accepts inbound I2P streams on its own b32 address
+# and forwards them to the shadowsocks container (host = compose service name).
+# The shadowsocks.dat keys are created at first start in /home/i2pd/data;
+# the b32 address appears after the first successful i2pd start.
+#
+# TEMPLATE FILE. On server i2pd start, docker compose renders it into
+# /home/i2pd/data/tunnels.conf, substituting __I2P_INBOUND_LENGTH__ and
+# __I2P_OUTBOUND_LENGTH__ with values from .env (I2P_INBOUND_LENGTH,
+# I2P_OUTBOUND_LENGTH). Change hops only in .env - do not edit here by hand.
+
+[shadowsocks]
+type = server
+host = shadowsocks
+port = 8388
+keys = shadowsocks.dat
+inbound.length = __I2P_INBOUND_LENGTH__
+outbound.length = __I2P_OUTBOUND_LENGTH__
+
+# inport defaults to port (8388). The client must specify
+# destinationport = 8388 (see client/tunnels.conf.example).
+# If you change SS_SERVER_PORT in .env - change port here too.
